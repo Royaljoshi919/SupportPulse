@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using SupportPulse.Api.DTOs;
 using SupportPulse.Api.Models;
 using SupportPulse.Api.Services;
+using Microsoft.EntityFrameworkCore;
+using SupportPulse.Api.Data;
 
 namespace SupportPulse.Api.Controllers;
 
@@ -13,10 +15,13 @@ namespace SupportPulse.Api.Controllers;
 public class TicketController : ControllerBase
 {
     private readonly ITicketService _ticketService;
+    private readonly ApplicationDbContext _context; // 🟢 Change 1: Field add kiya
 
-    public TicketController(ITicketService ticketService)
+    // 🟢 Change 2: Constructor mein ApplicationDbContext inject kiya
+    public TicketController(ITicketService ticketService, ApplicationDbContext context)
     {
         _ticketService = ticketService;
+        _context = context;
     }
 
     [HttpPost]
@@ -33,7 +38,6 @@ public class TicketController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTicketById(int id)
     {
-        // Extract user identity and role from JWT token for BOLA check
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "CUSTOMER";
 
@@ -67,5 +71,62 @@ public class TicketController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("agent/tickets")]
+    [Authorize(Roles = "AGENT,ADMIN")]
+    public async Task<IActionResult> GetAgentTickets([FromQuery] TicketQueryParameters parameters)
+    {
+        // 🟢 Change 3: context ki jagah '_context' kiya
+        var query = _context.Tickets.AsQueryable();
+
+        // 1. Status Filter
+        if (!string.IsNullOrWhiteSpace(parameters.Status))
+        {
+            query = query.Where(t => t.Status.ToString() == parameters.Status);
+        }
+
+        // 2. Priority Filter
+        if (!string.IsNullOrWhiteSpace(parameters.Priority))
+        {
+            query = query.Where(t => t.Priority.ToString() == parameters.Priority);
+        }
+
+        // // 3. Category Filter
+        // if (!string.IsNullOrWhiteSpace(parameters.Category))
+        // {
+        //     query = query.Where(t => t.Category == parameters.Category);
+        // }
+
+        // // 4. Sentiment Filter
+        // if (!string.IsNullOrWhiteSpace(parameters.Sentiment))
+        // {
+        //     query = query.Where(t => t.Sentiment == parameters.Sentiment);
+        // }
+
+        // 5. Text Search (Subject or Description)
+        if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+        {
+            var term = parameters.SearchTerm.ToLower();
+            query = query.Where(t => t.Subject.ToLower().Contains(term) || 
+                                     t.Description.ToLower().Contains(term));
+        }
+
+        var totalRecords = await query.CountAsync();
+
+        // 6. Pagination (Skip & Take)
+        var tickets = await query
+            .Skip((parameters.PageNumber - 1) * parameters.PageSize)
+            .Take(parameters.PageSize)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            PageNumber = parameters.PageNumber,
+            PageSize = parameters.PageSize,
+            TotalRecords = totalRecords,
+            TotalPages = (int)Math.Ceiling(totalRecords / (double)parameters.PageSize),
+            Data = tickets
+        });
     }
 }

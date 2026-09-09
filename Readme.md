@@ -35,8 +35,26 @@ SupportPulse is a secure, enterprise-grade backend ticketing system designed wit
 > **💡 Simple Terms:** This acts as the internal security guard of the project, ensuring no unauthorized user can view someone else's data or illegally modify ticket statuses out of order.
 
 ---
+📅 Day 5: Agent Search, Dynamic Filtering & Server-Side Pagination
+What was done:
+Agent Dashboard Endpoint: Built the GET /api/v1/tickets/agent/tickets endpoint allowing Support Agents and Admins to search, filter, and manage all system tickets.
+
+Dynamic Multi-Criteria Filtering: Implemented LINQ-based dynamic filtering (AsQueryable) supporting Status, Priority, Category, and Sentiment.
+
+Keyword Text Search: Integrated case-insensitive full-text searching across ticket Subject and Description fields.
+
+High-Performance Offset Pagination: Optimized query performance for 10,000+ records using .Skip() and .Take(), returning frontend-friendly metadata (totalRecords, totalPages, pageNumber, pageSize).
+
+DB Schema Sync & Security: Enforced strict RBAC ([Authorize(Roles = "AGENT,ADMIN")]) and synced MySQL schema by adding nullable Category and Sentiment columns.
+
+💡 Simple Terms: Think of this as giving support agents a high-speed search engine and custom control panel—allowing them to find specific tickets instantly out of thousands without slowing down the server.
 
 ## 🛠️ Tech Stack Overview
-* **Framework:** ASP.NET Core Web API (.NET 9)
-* **Database & ORM:** MySQL & Entity Framework Core
-* **Security:** JWT Authentication, BCrypt, Server-side RBAC & BOLA Guards
+Framework: ASP.NET Core Web API (.NET 9)
+
+Database & ORM: MySQL & Entity Framework Core (EF Core)
+
+Security: JWT Authentication, BCrypt Hashing, Server-Side RBAC & BOLA Guards
+
+Query & Performance: Dynamic LINQ Querying, Deferred Execution (AsQueryable), Server-Side Offset Pagination
+

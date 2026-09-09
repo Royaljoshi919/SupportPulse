@@ -32,6 +32,8 @@ public class Ticket
     public TicketPriority Priority { get; set; } = TicketPriority.MEDIUM;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<TicketFile> Files { get; set; } = new();
+     public string? Category { get; set; }
+    public string? Sentiment { get; set; }
 }
 
 public class TicketFile
@@ -42,3 +44,4 @@ public class TicketFile
     public FileType FileType { get; set; }
     public Ticket Ticket { get; set; } = null!;
 }
+

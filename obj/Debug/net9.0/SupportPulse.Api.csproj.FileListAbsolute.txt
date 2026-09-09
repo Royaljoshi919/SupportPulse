@@ -627,3 +627,4 @@ C:\Temp\SupportPulseCompile\SupportPulse.Api.deps.json
 C:\Temp\SupportPulseCompile\SupportPulse.Api.runtimeconfig.json
 C:\Temp\SupportPulseCompile\SupportPulse.Api.dll
 C:\Temp\SupportPulseCompile\SupportPulse.Api.pdb
+C:\Users\PC036\Desktop\AI Module\SupportPulse\src\SupportPulse.Api\obj\Debug\net9.0\SupportPulse.Api.sourcelink.json
