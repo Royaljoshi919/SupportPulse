@@ -15,13 +15,17 @@ namespace SupportPulse.Api.Controllers;
 public class TicketController : ControllerBase
 {
     private readonly ITicketService _ticketService;
-    private readonly ApplicationDbContext _context; // 🟢 Change 1: Field add kiya
+    private readonly ApplicationDbContext _context;
+    
+    // ---> NEW: Audit Service inject kiya
+    private readonly IAuditService _auditService;
 
-    // 🟢 Change 2: Constructor mein ApplicationDbContext inject kiya
-    public TicketController(ITicketService ticketService, ApplicationDbContext context)
+    // ---> NEW: Constructor mein IAuditService add kiya
+    public TicketController(ITicketService ticketService, ApplicationDbContext context, IAuditService auditService)
     {
         _ticketService = ticketService;
         _context = context;
+        _auditService = auditService;
     }
 
     [HttpPost]
@@ -31,7 +35,12 @@ public class TicketController : ControllerBase
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
 
-        var response = await _ticketService.CreateTicketAsync(int.Parse(userIdClaim), dto);
+        int currentUserId = int.Parse(userIdClaim);
+        var response = await _ticketService.CreateTicketAsync(currentUserId, dto);
+
+        // ---> NEW: Ticket creation ko audit log mein save karein
+        await _auditService.LogAsync(currentUserId, "TICKET_CREATED", "Ticket", response.Id.ToString());
+
         return CreatedAtAction(nameof(GetTicketById), new { id = response.Id }, response);
     }
 
@@ -52,6 +61,9 @@ public class TicketController : ControllerBase
         }
         catch (UnauthorizedAccessException)
         {
+            // ---> NEW: Unauthorized access attempt ko log karein (BOLA Failure attempt)
+            await _auditService.LogAsync(currentUserId, "UNAUTHORIZED_TICKET_ACCESS", "Ticket", id.ToString());
+            
             return StatusCode(403, new { message = "Forbidden: You do not own this ticket." });
         }
     }
@@ -61,10 +73,18 @@ public class TicketController : ControllerBase
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] TicketStatus newStatus)
     {
         var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "AGENT";
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
+        int currentUserId = int.Parse(userIdClaim);
 
         try
         {
             await _ticketService.UpdateTicketStatusAsync(id, newStatus, userRole);
+            
+            // ---> NEW: Ticket status update ko audit log mein save karein
+            await _auditService.LogAsync(currentUserId, "TICKET_STATUS_CHANGED", "Ticket", id.ToString(), null, newStatus.ToString());
+            
             return Ok(new { message = "Ticket status updated successfully." });
         }
         catch (InvalidOperationException ex)
@@ -77,7 +97,6 @@ public class TicketController : ControllerBase
     [Authorize(Roles = "AGENT,ADMIN")]
     public async Task<IActionResult> GetAgentTickets([FromQuery] TicketQueryParameters parameters)
     {
-        // 🟢 Change 3: context ki jagah '_context' kiya
         var query = _context.Tickets.AsQueryable();
 
         // 1. Status Filter
@@ -92,17 +111,17 @@ public class TicketController : ControllerBase
             query = query.Where(t => t.Priority.ToString() == parameters.Priority);
         }
 
-        // // 3. Category Filter
-        // if (!string.IsNullOrWhiteSpace(parameters.Category))
-        // {
-        //     query = query.Where(t => t.Category == parameters.Category);
-        // }
+        // 3. Category Filter
+        if (!string.IsNullOrWhiteSpace(parameters.Category))
+        {
+            query = query.Where(t => t.Category == parameters.Category);
+        }
 
-        // // 4. Sentiment Filter
-        // if (!string.IsNullOrWhiteSpace(parameters.Sentiment))
-        // {
-        //     query = query.Where(t => t.Sentiment == parameters.Sentiment);
-        // }
+        // 4. Sentiment Filter
+        if (!string.IsNullOrWhiteSpace(parameters.Sentiment))
+        {
+            query = query.Where(t => t.Sentiment == parameters.Sentiment);
+        }
 
         // 5. Text Search (Subject or Description)
         if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
@@ -128,5 +147,58 @@ public class TicketController : ControllerBase
             TotalPages = (int)Math.Ceiling(totalRecords / (double)parameters.PageSize),
             Data = tickets
         });
+    }
+
+    /// <summary>
+    /// Adds an internal note to a ticket (AGENT and ADMIN only).
+    /// Endpoint: POST /api/v1/tickets/{id}/notes
+    /// </summary>
+    [HttpPost("{id}/notes")]
+    [Authorize(Roles = "AGENT,ADMIN")]
+    public async Task<IActionResult> AddInternalNote(int id, [FromBody] CreateNoteDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // 1. Check if Ticket exists
+        var ticket = await _context.Tickets.FindAsync(id);
+        if (ticket == null)
+        {
+            return NotFound(new { message = $"Ticket with ID {id} not found." });
+        }
+
+        // 2. Extract Agent ID from Claims
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
+        int currentUserId = int.Parse(userIdClaim);
+
+        // 3. Create Note Entity
+        var noteEntity = new TicketNote
+        {
+            TicketId = id,
+            AgentId = currentUserId,
+            Note = dto.Note,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.TicketNotes.Add(noteEntity);
+        await _context.SaveChangesAsync();
+
+        // ---> NEW: Internal Note add hone ko audit log mein save karein
+        await _auditService.LogAsync(currentUserId, "INTERNAL_NOTE_ADDED", "TicketNote", noteEntity.Id.ToString(), null, "Note added to Ticket ID: " + id);
+
+        // 4. Return DTO Response
+        var response = new NoteResponseDto
+        {
+            Id = noteEntity.Id,
+            TicketId = noteEntity.TicketId,
+            AgentId = noteEntity.AgentId,
+            Note = noteEntity.Note,
+            CreatedAt = noteEntity.CreatedAt
+        };
+
+        return CreatedAtAction(nameof(GetTicketById), new { id = noteEntity.TicketId }, response);
     }
 }

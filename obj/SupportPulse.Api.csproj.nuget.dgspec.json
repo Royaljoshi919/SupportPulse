@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\PC036\\Desktop\\AI Module\\SupportPulse\\src\\SupportPulse.Api\\SupportPulse.Api.csproj": {}
+    "C:\\Users\\PC036\\Desktop\\AI Module\\Supportpulse\\src\\SupportPulse.Api\\SupportPulse.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\PC036\\Desktop\\AI Module\\SupportPulse\\src\\SupportPulse.Api\\SupportPulse.Api.csproj": {
+    "C:\\Users\\PC036\\Desktop\\AI Module\\Supportpulse\\src\\SupportPulse.Api\\SupportPulse.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\PC036\\Desktop\\AI Module\\SupportPulse\\src\\SupportPulse.Api\\SupportPulse.Api.csproj",
+        "projectUniqueName": "C:\\Users\\PC036\\Desktop\\AI Module\\Supportpulse\\src\\SupportPulse.Api\\SupportPulse.Api.csproj",
         "projectName": "SupportPulse.Api",
-        "projectPath": "C:\\Users\\PC036\\Desktop\\AI Module\\SupportPulse\\src\\SupportPulse.Api\\SupportPulse.Api.csproj",
+        "projectPath": "C:\\Users\\PC036\\Desktop\\AI Module\\Supportpulse\\src\\SupportPulse.Api\\SupportPulse.Api.csproj",
         "packagesPath": "C:\\Users\\PC036\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\PC036\\Desktop\\AI Module\\SupportPulse\\src\\SupportPulse.Api\\obj\\",
+        "outputPath": "C:\\Users\\PC036\\Desktop\\AI Module\\Supportpulse\\src\\SupportPulse.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\PC036\\AppData\\Roaming\\NuGet\\NuGet.Config"
