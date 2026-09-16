@@ -23,32 +23,33 @@ namespace SupportPulse.Api.Controllers
         /// Endpoint: GET /api/v1/knowledge-base
         /// Allowed: All Authenticated Users
         /// </summary>
-        [HttpGet("knowledge-base")]
-        [Authorize]
-        public async Task<IActionResult> GetAllArticles([FromQuery] string? category)
-        {
-            var query = _context.KnowledgeBaseArticles.AsQueryable();
+       [HttpGet("knowledge-base")]
+[Authorize]
+public async Task<IActionResult> GetAllArticles([FromQuery] string? category)
+{
+    var query = _context.KnowledgeBaseArticles.AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(category))
-            {
-                query = query.Where(a => a.Category.ToLower() == category.ToLower());
-            }
+    if (!string.IsNullOrWhiteSpace(category))
+    {
+        query = query.Where(a => a.Category.ToLower() == category.ToLower());
+    }
 
-            var articles = await query
-                .OrderByDescending(a => a.CreatedAt)
-                .Select(a => new ArticleResponseDto
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Content = a.Content,
-                    Category = a.Category,
-                    CreatedAt = a.CreatedAt,
-                    UpdatedAt = a.UpdatedAt
-                })
-                .ToListAsync();
+    // Sirf check karega ki data exist karta hai ya nahi (Data fetch nahi karega)
+    var isDataAvailable = await query.AnyAsync();
 
-            return Ok(articles);
-        }
+    if (isDataAvailable)
+    {
+        // Data mil gaya, par show nahi karna hai
+        return Ok(new { message = "ELIGIBLE" });
+    }
+    else
+    {
+        // Data nahi mila
+        return Ok(new { message = "NOT ELIGIBLE" }); 
+        // Note: Aap yahan chahein toh BadRequest() ya NotFound() bhi use kar sakte hain, 
+        // par agar aapko 200 OK ke sath message dikhana hai toh yeh best hai.
+    }
+}
 
         /// <summary>
         /// Create a new Knowledge Base article.

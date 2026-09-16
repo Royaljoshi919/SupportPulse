@@ -58,3 +58,23 @@ Security: JWT Authentication, BCrypt Hashing, Server-Side RBAC & BOLA Guards
 
 Query & Performance: Dynamic LINQ Querying, Deferred Execution (AsQueryable), Server-Side Offset Pagination
 
+
+## 🚀 Recent Updates: Async Queue & Background Processing (Day 8 & 9)[cite: 1]
+
+### 1. Optimized Knowledge Base Lookup
+* **Endpoint:** `GET /api/v1/knowledge-base`
+* **Optimization:** Refactored query execution using EF Core `.AnyAsync()` to perform lightweight boolean checks (`ELIGIBLE` / `NOT ELIGIBLE`), avoiding heavy data transfers.
+
+### 2. Asynchronous AI Job Queue Architecture (Day 8)[cite: 1]
+* **Decoupled Architecture:** Separated ticket creation from long-running AI processing pipelines to guarantee sub-200ms API response times[cite: 1].
+* **Database & Domain Models:** 
+  * Updated `ai_jobs` table schema to track `updated_at` timestamps[cite: 1].
+  * Mapped `AiJob.cs` entity within `ApplicationDbContext`[cite: 1].
+* **Controller Logic:** Updated `TicketController.CreateTicket` to automatically enqueue a `PENDING` AI job upon ticket persistence[cite: 1].
+* **Response DTO:** Extended `TicketResponseDto` to expose `AiStatus` (`PENDING`) directly to clients[cite: 1].
+
+### 3. Background Worker Engine (Day 9)[cite: 1]
+* **Worker Service:** Implemented `AIEnrichmentWorker.cs` extending `.NET BackgroundService` for continuous 24/7 background task polling[cite: 1].
+* **Scoped Dependency Resolution:** Integrated `IServiceScopeFactory` to safely manage scoped `ApplicationDbContext` instances inside a singleton background worker.
+* **Job State Machine:** Configured state transitions for fault tolerance:
+  `PENDING` ➔ `PROCESSING` (Job Lock) ➔ `COMPLETED` / `FAILED`[cite: 1].

@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using SupportPulse.Api.Data;
 using SupportPulse.Api.Repositories;
 using SupportPulse.Api.Services;
+using SupportPulse.Api.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +18,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<ITicketService, TicketService>();
-
+builder.Services.AddHostedService<AIEnrichmentWorker>();
+builder.Services.AddHttpClient<AIEnrichmentWorker>();
 // JWT Authentication Configuration
 var jwtKey = builder.Configuration["Jwt:Secret"]!;
 builder.Services.AddAuthentication(options =>

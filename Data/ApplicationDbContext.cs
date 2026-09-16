@@ -11,10 +11,12 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<TicketAiResult> TicketAiResults { get; set; }
     public DbSet<TicketFile> TicketFiles => Set<TicketFile>();
-public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<AiJob> AiJobs { get; set; }
     public DbSet<TicketNote> TicketNotes { get; set; }
-public DbSet<KnowledgeBaseArticle> KnowledgeBaseArticles { get; set; }
+    public DbSet<KnowledgeBaseArticle> KnowledgeBaseArticles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

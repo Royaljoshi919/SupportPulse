@@ -16,11 +16,8 @@ public class TicketController : ControllerBase
 {
     private readonly ITicketService _ticketService;
     private readonly ApplicationDbContext _context;
-    
-    // ---> NEW: Audit Service inject kiya
     private readonly IAuditService _auditService;
 
-    // ---> NEW: Constructor mein IAuditService add kiya
     public TicketController(ITicketService ticketService, ApplicationDbContext context, IAuditService auditService)
     {
         _ticketService = ticketService;
@@ -36,9 +33,25 @@ public class TicketController : ControllerBase
         if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
 
         int currentUserId = int.Parse(userIdClaim);
+        
+        // 1. Ticket database mein save hoga
         var response = await _ticketService.CreateTicketAsync(currentUserId, dto);
 
-        // ---> NEW: Ticket creation ko audit log mein save karein
+        // -----------------------------------------------------------------
+        // ---> DAY 8: AI Job Entry (PENDING status ke sath DB queue mein)
+        // -----------------------------------------------------------------
+        var aiJob = new AiJob
+        {
+            TicketId = response.Id,
+            Status = "PENDING",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.AiJobs.Add(aiJob);
+        await _context.SaveChangesAsync();
+        // -----------------------------------------------------------------
+
+        // 2. Ticket creation ko audit log mein save karein
         await _auditService.LogAsync(currentUserId, "TICKET_CREATED", "Ticket", response.Id.ToString());
 
         return CreatedAtAction(nameof(GetTicketById), new { id = response.Id }, response);
@@ -61,7 +74,6 @@ public class TicketController : ControllerBase
         }
         catch (UnauthorizedAccessException)
         {
-            // ---> NEW: Unauthorized access attempt ko log karein (BOLA Failure attempt)
             await _auditService.LogAsync(currentUserId, "UNAUTHORIZED_TICKET_ACCESS", "Ticket", id.ToString());
             
             return StatusCode(403, new { message = "Forbidden: You do not own this ticket." });
@@ -82,7 +94,6 @@ public class TicketController : ControllerBase
         {
             await _ticketService.UpdateTicketStatusAsync(id, newStatus, userRole);
             
-            // ---> NEW: Ticket status update ko audit log mein save karein
             await _auditService.LogAsync(currentUserId, "TICKET_STATUS_CHANGED", "Ticket", id.ToString(), null, newStatus.ToString());
             
             return Ok(new { message = "Ticket status updated successfully." });
@@ -127,7 +138,7 @@ public class TicketController : ControllerBase
         if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
         {
             var term = parameters.SearchTerm.ToLower();
-            query = query.Where(t => t.Subject.ToLower().Contains(term) || 
+            query = query.Where(t => t.Subject.ToLower().Contains(term) ||
                                      t.Description.ToLower().Contains(term));
         }
 
@@ -186,7 +197,6 @@ public class TicketController : ControllerBase
         _context.TicketNotes.Add(noteEntity);
         await _context.SaveChangesAsync();
 
-        // ---> NEW: Internal Note add hone ko audit log mein save karein
         await _auditService.LogAsync(currentUserId, "INTERNAL_NOTE_ADDED", "TicketNote", noteEntity.Id.ToString(), null, "Note added to Ticket ID: " + id);
 
         // 4. Return DTO Response
