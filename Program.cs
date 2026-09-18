@@ -18,8 +18,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<ITicketService, TicketService>();
+
+// HttpClient aur Background Worker Registration (FIXED)
+builder.Services.AddHttpClient(); 
 builder.Services.AddHostedService<AIEnrichmentWorker>();
-builder.Services.AddHttpClient<AIEnrichmentWorker>();
+
 // JWT Authentication Configuration
 var jwtKey = builder.Configuration["Jwt:Secret"]!;
 builder.Services.AddAuthentication(options =>
@@ -40,6 +43,7 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
 });
+
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

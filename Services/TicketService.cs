@@ -17,7 +17,6 @@ public class TicketService : ITicketService
 
     public async Task<TicketResponseDto> CreateTicketAsync(int userId, CreateTicketDto dto)
     {
-        // File validations (already implemented)
         var ticket = new Ticket
         {
             UserId = userId,
@@ -33,46 +32,54 @@ public class TicketService : ITicketService
         var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads");
         if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
+        // Audio File Handling
         if (dto.AudioFile != null && dto.AudioFile.Length > 0)
         {
             var path = await SaveFileAsync(dto.AudioFile, uploadsFolder);
-            await _repository.AddTicketFileAsync(new TicketFile { TicketId = createdTicket.Id, FilePath = path, FileType = FileType.AUDIO });
+            await _repository.AddTicketFileAsync(new TicketFile 
+            { 
+                TicketId = createdTicket.Id, 
+                FilePath = path, 
+                FileType = FileType.AUDIO 
+            });
             filePaths.Add(path);
         }
 
+        // Screenshot File Handling
         if (dto.Screenshot != null && dto.Screenshot.Length > 0)
         {
             var path = await SaveFileAsync(dto.Screenshot, uploadsFolder);
-            await _repository.AddTicketFileAsync(new TicketFile { TicketId = createdTicket.Id, FilePath = path, FileType = FileType.IMAGE });
+            await _repository.AddTicketFileAsync(new TicketFile 
+            { 
+                TicketId = createdTicket.Id, 
+                FilePath = path, 
+                FileType = FileType.IMAGE 
+            });
             filePaths.Add(path);
         }
 
         return MapToDto(createdTicket, filePaths);
     }
 
-    // --- DAY 4: BOLA / IDOR Protection for Ticket Retrieval ---
     public async Task<TicketResponseDto?> GetTicketAsync(int ticketId, int currentUserId, string currentUserRole)
     {
         var ticket = await _repository.GetTicketByIdAsync(ticketId);
         if (ticket == null) return null;
 
-        // If user is a CUSTOMER, verify ownership
         if (currentUserRole == "CUSTOMER" && ticket.UserId != currentUserId)
         {
-            throw new UnauthorizedAccessException("ACCESS_DENIED_BOLA"); // Handled as 403 Forbidden
+            throw new UnauthorizedAccessException("ACCESS_DENIED_BOLA");
         }
 
         var filePaths = ticket.Files.Select(f => f.FilePath).ToList();
         return MapToDto(ticket, filePaths);
     }
 
-    // --- DAY 4: Status State Machine Validation ---
     public async Task<bool> UpdateTicketStatusAsync(int ticketId, TicketStatus newStatus, string currentUserRole)
     {
         var ticket = await _repository.GetTicketByIdAsync(ticketId);
         if (ticket == null) return false;
 
-        // Validate State Machine Transitions
         bool isValidTransition = (ticket.Status, newStatus) switch
         {
             (TicketStatus.OPEN, TicketStatus.IN_PROGRESS) => true,
@@ -95,10 +102,13 @@ public class TicketService : ITicketService
     {
         var fileName = $"{Guid.NewGuid()}_{file.FileName}";
         var filePath = Path.Combine(folder, fileName);
-        using (var stream = new FileStream(filePath, FileMode.Create))
+
+        using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
             await file.CopyToAsync(stream);
+            await stream.FlushAsync();
         }
+
         return filePath;
     }
 

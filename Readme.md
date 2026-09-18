@@ -78,3 +78,45 @@ Query & Performance: Dynamic LINQ Querying, Deferred Execution (AsQueryable), Se
 * **Scoped Dependency Resolution:** Integrated `IServiceScopeFactory` to safely manage scoped `ApplicationDbContext` instances inside a singleton background worker.
 * **Job State Machine:** Configured state transitions for fault tolerance:
   `PENDING` ➔ `PROCESSING` (Job Lock) ➔ `COMPLETED` / `FAILED`[cite: 1].
+
+
+  🚀 Day 9 & 10: Background Worker & AI Transcription Pipeline
+
+1. Background Worker Implementation (Day 9)
+
+Background Service: Implemented AIEnrichmentWorker.cs using .NET BackgroundService to run tasks asynchronously in the background without blocking API responses.
+
+Service Scopes & DI: Configured IServiceScopeFactory to manage Entity Framework Core's scoped ApplicationDbContext inside the singleton worker.
+
+Job State Machine: Successfully implemented continuous polling from the ai_jobs table, managing the lifecycle states: PENDING ➔ PROCESSING (Job Lock) ➔ COMPLETED.
+
+2. Audio-to-Text Pipeline Initial Setup (Day 10)
+
+Database & Domain Modeling: Created and verified the ticket_ai_results table in MySQL to store AI outputs. Mapped the TicketAiResult.cs model in Entity Framework Core.
+
+Mock AI Processing: Implemented a simulated asynchronous wait and a "Mock Transcription" generator in the worker to test end-to-end database writes before integrating the actual OpenAI Whisper API.
+
+Configuration Ready: Prepared appsettings.json for external API keys and registered HttpClient in Program.cs to allow outbound calls to AI services.
+
+## 🎙️ Day 10 — Audio → Text (Whisper API Integration)
+
+### 📌 Objective
+Customer support tickets mein attached audio messages (.mp3, .wav) ko automatically text mein transcribe karna background worker service ke zariye.
+
+### ⚙️ Implementation Details
+- **Background Worker:** Updated `AIEnrichmentWorker` service to handle background queue execution asynchronously.
+- **AI Model Integration:** Integrated Groq API (`whisper-large-v3`) for audio transcription using `IHttpClientFactory`.
+- **Payload & Data Flow:** Handled `MultipartFormDataContent` to stream audio files securely to the Groq API endpoint.
+- **Database Tracking:**
+  - **`ai_jobs`**: Managed status state machine (`PENDING` ➔ `PROCESSING` ➔ `COMPLETED` / `FAILED`).
+  - **`ticket_ai_results`**: Stored extracted transcription text into the `transcription` column for the target ticket.
+
+### 🔄 Execution Flow
+1. Worker identifies and picks a `PENDING` job from the `ai_jobs` table.
+2. Fetches associated audio attachment path from `ticket_files`.
+3. Sends audio stream payload to Groq Whisper API endpoint (`/v1/audio/transcriptions`).
+4. Parses JSON response text and inserts record into `ticket_ai_results`.
+5. Marks `ai_jobs` status as `COMPLETED`.
+
+### ✅ Result
+Audio-to-text pipeline successfully built, tested, and verified with MySQL database persistence.
