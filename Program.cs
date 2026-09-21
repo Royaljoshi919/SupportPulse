@@ -21,7 +21,7 @@ builder.Services.AddScoped<ITicketService, TicketService>();
 
 // HttpClient aur Background Worker Registration (FIXED)
 builder.Services.AddHttpClient(); 
-builder.Services.AddHostedService<AIEnrichmentWorker>();
+builder.Services.AddHostedService<AiEnrichmentWorker>();
 
 // JWT Authentication Configuration
 var jwtKey = builder.Configuration["Jwt:Secret"]!;

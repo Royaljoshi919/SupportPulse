@@ -120,3 +120,38 @@ Customer support tickets mein attached audio messages (.mp3, .wav) ko automatica
 
 ### ✅ Result
 Audio-to-text pipeline successfully built, tested, and verified with MySQL database persistence.
+
+### 🚀 Day 11: AI Enrichment Worker Integration & Multimodal AI Processing
+
+#### 📌 Key Achievements & Technical Implementation
+* **AI Enrichment Background Worker:** Implemented `AIEnrichmentWorker` as a background service (`BackgroundService` / `IHostedService`) to asynchronously process ticket data without blocking API requests.
+* **Audio Transcription (Speech-to-Text):** Integrated **Groq Whisper API** to automatically process and transcribe audio files (`.mp3`/`.wav`) attached to support tickets.
+* **Vision AI Integration:** Integrated **Google Gemini Vision API (`gemini-3.6-flash`)** to analyze uploaded ticket screenshots/images and extract diagnostic details.
+* **Job Queue Management:** Configured database-driven queue state tracking (`ai_jobs` table in MySQL) supporting `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED` state transitions.
+* **Error Handling & Model Endpoint Optimization:** Handled API rate limits, bad payload responses, and endpoint migrations for seamless third-party AI service recovery.
+
+#### 🛠️ Tech Stack Added / Used
+* **Framework:** .NET 9 Web API (`BackgroundService`)
+* **AI Engine:** Groq Whisper API (Audio) & Google Gemini 3.6 Flash (Vision)
+* **Database Tables:** `ai_jobs`, `ticket_files`, `ticket_ai_results`
+
+## Day 12: AI Enrichment Background Worker & API Integration
+
+### 🚀 Features Implemented
+* **Automated Ticket Classification:** Developed a .NET Background Service (`AiEnrichmentWorker`) to automatically pull `PENDING` AI jobs from the MySQL database and process them in the background.
+* **Audio Processing:** Integrated **Groq Whisper API** to accurately transcribe user voice notes and audio attachments.
+* **Vision & Text Analysis:** Integrated **Google Gemini API (`gemini-3.8-flash`)** to analyze ticket screenshots and intelligently classify ticket Category, Priority, and Sentiment.
+* **Seamless DB Integration:** Configured Entity Framework Core to automatically save AI transcriptions to `ticket_ai_results` and update the core `tickets` table upon successful processing.
+
+### 🛠️ Challenges Overcome & Bug Fixes
+* **Local File Handling:** Resolved `FileNotFoundException` by properly mapping physical file paths for attachments in the `wwwroot` directory.
+* **Dynamic MIME Types:** Fixed Groq `invalid_media_file` (HTTP 400) errors by dynamically identifying and passing the correct Content-Type for audio files.
+* **API Rate Limiting (HTTP 429):** Implemented a strategic `Task.Delay()` execution pause between heavy Vision and Classification API calls to respect Gemini's free-tier rate limits.
+* **Model Versioning (HTTP 404):** Debugged API endpoint issues and successfully mapped the requests to the correct and active Gemini model version.
+* **Server Overload Handling (HTTP 503):** Managed high-demand API server queues gracefully, ensuring the worker can safely retry failed/pending jobs without data loss.
+
+### 💻 Tech Stack Used Today
+* C# / .NET Background Worker Service
+* Entity Framework Core & MySQL
+* Groq API (Audio Transcription)
+* Google Gemini API (Vision & Text Generation)
