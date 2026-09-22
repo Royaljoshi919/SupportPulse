@@ -16,9 +16,10 @@ public class TicketAiResult
     [Column("transcription", TypeName = "text")]
     public string? Transcription { get; set; }
 
-    // 👇 YEH NAYI LINE ADD KAREIN 👇
     [Column("image_description", TypeName = "text")]
     public string? ImageDescription { get; set; }
 
-    // (Agar Summary ya AiRemark jaisi aur properties hain toh unhe delete mat karna, waise hi rehne dena)
+    // 👇 YAHAN ADD KARNA HAI SUGGESTED RESPONSE 👇
+    [Column("suggested_response", TypeName = "text")]
+    public string? SuggestedResponse { get; set; }
 }
