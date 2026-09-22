@@ -155,3 +155,43 @@ Audio-to-text pipeline successfully built, tested, and verified with MySQL datab
 * Entity Framework Core & MySQL
 * Groq API (Audio Transcription)
 * Google Gemini API (Vision & Text Generation)
+
+## 🚀 Recent Updates & Technical Changelog
+
+### AI Enrichment Worker - Hybrid Provider Architecture & Fixes (Sept 22, 2026)
+
+#### 1. Vision Model Migration to Gemini 1.5 Flash
+* **Problem Resolved**: Fixed `model_decommissioned` errors caused by deprecated Groq Llama 3.2 Vision models and `insufficient_quota` issues on OpenAI Vision APIs.
+* **Solution**: Integrated **Google Gemini 1.5 Flash** for free, fast, and highly accurate ticket screenshot and UI image analysis.
+
+#### 2. Hybrid Multi-AI Provider Architecture
+Updated `AiEnrichmentWorker.cs` background processing to use specialized models for optimal performance and zero cost bottleneck:
+
+| Task / Feature | AI Model / Service | Endpoint / Model Name |
+| :--- | :--- | :--- |
+| **Audio Transcription** | Groq API | `whisper-large-v3` |
+| **Screenshot Analysis** | Google Gemini API | `gemini-1.5-flash` |
+| **Ticket Classification** | Groq API | `openai/gpt-oss-120b` |
+| **RAG Suggested Response** | Groq API | `openai/gpt-oss-120b` |
+
+#### 3. Error Handling & System Resilience
+* Added isolated `try-catch` blocks around the image analysis workflow inside `AiEnrichmentWorker.cs`.
+* Prevents image API glitches from causing overall job failures, ensuring smooth classification and response generation fallback.
+
+#### 4. Verification & Testing
+* Verified end-to-end background execution using MySQL `ai_jobs` table state machine (`PENDING` ➔ `PROCESSING` ➔ `COMPLETED`).
+* Confirmed worker stability and logging via `.NET BackgroundService` runner (`dotnet run`).
+
+---
+
+### Configuration Setup (`appsettings.json`)
+
+```json
+{
+  "GroqSettings": {
+    "ApiKey": "YOUR_GROQ_API_KEY"
+  },
+  "GeminiSettings": {
+    "ApiKey": "YOUR_GEMINI_API_KEY"
+  }
+}
